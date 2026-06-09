@@ -1,11 +1,12 @@
-from langchain_groq import Groq
-from dotenv import load_dotenv
+from langchain_groq import ChatGroq
 import os
+from dotenv import load_dotenv
 
 load_dotenv()
 
-def get_llm(model_name="llama-2-8b-chat-hf"):
-    return Groq(
-        groq_api_key=os.getenv("GROQ_API_KEY"),
-        model=model_name,
+def get_llm():
+    return ChatGroq(
+        model="llama-3.3-70b-versatile" ,
+        api_key=os.getenv("GROQ_API_KEY"),
+        temperature=0.2
     )

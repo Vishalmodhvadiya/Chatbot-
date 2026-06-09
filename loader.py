@@ -1,24 +1,45 @@
-import tempfile
-from langchain_core.document_loaders import PyPDFLoader
-from langchain_text_splitters import RecursiveCharacterTextSplitter
 import os
+import tempfile
+from langchain_community.document_loaders import PyPDFLoader
+from langchain_text_splitters import RecursiveCharacterTextSplitter
+import uuid
 
-def load_and_chunk_pdf(uploaded_file) -> list:
+def load_and_chunk_pdf(file_bytes: bytes, file_name: str, user_id: str, session_id: str) -> list:
 
+    # Save uploaded file temporarily
     with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as tmp:
-        tmp.write(uploaded_file.read())
+        tmp.write(file_bytes)
         tmp_path = tmp.name
-    loader = PyPDFLoader(tmp_path)
-    pages = loader.load()
 
-    splitter = RecursiveCharacterTextSplitter(
-        chunk_size=800,
-        chunk_overlap=100,
-    )
-    chunks = splitter.split_documents(pages)
+    try:
+      
+        loader = PyPDFLoader(tmp_path)
+        pages = loader.load()
+      
+        splitter = RecursiveCharacterTextSplitter(
+            chunk_size=2000,
+            chunk_overlap=400,
+            separators=["\n\n", "\n", ".", " "]
+        )
 
-    for chunk in chunks:
-        chunk.metadata["source_file"] = uploaded_file.name
+        chunks = splitter.split_documents(pages)
 
-    os.unlink(tmp_path)  
-    return chunks
+
+        file_id = str(uuid.uuid4())
+
+        for chunk in chunks:
+            chunk.metadata.update({
+                "user_id": user_id,
+                "file_id": file_id,
+                "file_name": file_name,
+                "page": chunk.metadata.get("page", 0),
+                "session_id": session_id 
+            })
+
+       
+        return chunks
+
+    finally:
+       
+        if os.path.exists(tmp_path):
+            os.unlink(tmp_path)
