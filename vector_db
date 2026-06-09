@@ -1,0 +1,21 @@
+from langchain_chroma import Chroma
+from embedding import get_embeddings
+
+PERSIST_DIR = "vectorstore_db"
+
+def get_vectorstore():
+    embeddings = get_embeddings()
+    return Chroma(
+        persist_directory=PERSIST_DIR,
+        embedding_function=embeddings
+    )
+
+def add_documents(chunks):
+    embeddings = get_embeddings()
+    vectorstore = Chroma.from_documents(
+        documents=chunks,
+        embedding=embeddings,
+        persist_directory=PERSIST_DIR
+    )
+
+    return vectorstore
