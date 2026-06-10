@@ -13,11 +13,15 @@ from llm import get_llm
 from retrive import get_retriever
 
 session_store = {}
+sensitive_store = {}
 
 def get_session_history(session_id: str) -> ChatMessageHistory:
     if session_id not in session_store:
         session_store[session_id] = ChatMessageHistory()
     return session_store[session_id]
+
+def set_file_list(user_id: str, sensitive_list: str):
+    sensitive_store[user_id] = sensitive_list
 
 PDF_SYSTEM_PROMPT = """
 You are a helpful research assistant analyzing a PDF document.
@@ -49,6 +53,7 @@ FALLBACK_TO_WEB
 Context:
 {context}
 """
+
 WEB_SYSTEM_PROMPT = """
 You are a helpful research assistant.
 
@@ -100,13 +105,12 @@ def tavily_search_as_docs(query: str) -> list[Document]:
 
 NOT_FOUND_SIGNAL = "FALLBACK_TO_WEB"
 
-def get_rag_chain(user_id: str, session_id: str, file_id: str = None):
+def get_rag_chain(user_id: str, session_id: str):
     llm = get_llm()
 
     retriever = get_retriever(
         user_id=user_id,
         session_id=session_id,
-        file_id=file_id,
         search_type="mmr",
         k=5
     )
@@ -146,7 +150,7 @@ def get_rag_chain(user_id: str, session_id: str, file_id: str = None):
                 "source": "web"
             }
 
-        return {**pdf_result, "source": "pdf"}  # ✅ inside route_chain now
+        return {**pdf_result, "source": "pdf"}
 
     chain_with_history = RunnableWithMessageHistory(
         RunnableLambda(route_chain),
@@ -157,3 +161,19 @@ def get_rag_chain(user_id: str, session_id: str, file_id: str = None):
     )
 
     return chain_with_history, session_id
+
+
+def run_agent(query: str, user_id: str, session_id: str) -> dict:
+    chain, session_id = get_rag_chain(user_id=user_id, session_id=session_id)
+
+    result = chain.invoke(
+        {"input": query},
+        config={"configurable": {"session_id": session_id}}
+    )
+
+    return {
+        "answer": result.get("answer", ""),
+        "source": result.get("source", "pdf"),
+        "classification": result.get("classification"),
+        "awaiting_email": result.get("awaiting_email", False),
+    }

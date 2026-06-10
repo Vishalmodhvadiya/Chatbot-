@@ -4,7 +4,7 @@ from langchain_community.document_loaders import PyPDFLoader
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 import uuid
 
-def load_and_chunk_pdf(file_bytes: bytes, file_name: str, user_id: str, session_id: str) -> list:
+def load_and_chunk_pdf(file_bytes: bytes, user_id: str) -> list:
 
     # Save uploaded file temporarily
     with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as tmp:
@@ -25,15 +25,9 @@ def load_and_chunk_pdf(file_bytes: bytes, file_name: str, user_id: str, session_
         chunks = splitter.split_documents(pages)
 
 
-        file_id = str(uuid.uuid4())
-
         for chunk in chunks:
             chunk.metadata.update({
-                "user_id": user_id,
-                "file_id": file_id,
-                "file_name": file_name,
-                "page": chunk.metadata.get("page", 0),
-                "session_id": session_id 
+                "user_id": user_id
             })
 
        
