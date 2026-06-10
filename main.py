@@ -2,8 +2,8 @@ from fastapi import FastAPI, UploadFile, HTTPException, File, Form
 from typing import Optional
 from loader import load_and_chunk_pdf
 from vector_db import add_documents
-from agent import run_agent, set_file_list
-from chat_history import save_message
+from agent import set_file_list
+from agent1 import chat_with_history
 import uuid
 
 app = FastAPI()
@@ -36,6 +36,7 @@ async def upload_pdf(
         "sensitive_list_loaded": bool(sensitive_list),
     }
 
+
 @app.post("/chat/{user_id}")
 async def chat(
     user_id: str,
@@ -45,33 +46,15 @@ async def chat(
     if not session_id or session_id.strip() == "" or session_id.strip() == "string":
         session_id = str(uuid.uuid4())
 
-    # Save user message
-    save_message(
+    result = chat_with_history(
         user_id=user_id,
         session_id=session_id,
-        role="user",
-        message=question
-    )
-
-    result = run_agent(
-        query=question,
-        user_id=user_id,
-        session_id=session_id,
-    )
-
-    answer = result["answer"]
-
-    # Save assistant response
-    save_message(
-        user_id=user_id,
-        session_id=session_id,
-        role="assistant",
-        message=answer
+        question=question,
     )
 
     return {
         "question": question,
-        "answer": answer,
+        "answer": result["answer"],
         "session_id": session_id,
         "source_type": result.get("source"),
         "classification": result.get("classification"),

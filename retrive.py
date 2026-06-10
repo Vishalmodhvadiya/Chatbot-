@@ -1,5 +1,5 @@
 from langchain_chroma import Chroma
-from langchain_huggingface import HuggingFaceEmbeddings
+from langchain_community.embeddings import HuggingFaceEmbeddings
 
 def get_retriever(user_id: str, session_id: str, search_type: str = "mmr", k: int = 11):
     
