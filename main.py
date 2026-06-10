@@ -3,9 +3,11 @@ from typing import Optional
 from loader import load_and_chunk_pdf
 from vector_db import add_documents
 from agent import run_agent, set_file_list
+from chat_history import save_message
 import uuid
 
 app = FastAPI()
+
 
 @app.post("/upload/{user_id}")
 async def upload_pdf(
@@ -13,7 +15,6 @@ async def upload_pdf(
     file: UploadFile = File(...),
     sensitive_list: Optional[str] = Form(default=None)
 ):
-    # NO session created here
     file_bytes = await file.read()
 
     if not file_bytes.startswith(b"%PDF"):
@@ -34,15 +35,23 @@ async def upload_pdf(
         "chunks_count": len(chunks),
         "sensitive_list_loaded": bool(sensitive_list),
     }
+
 @app.post("/chat/{user_id}")
 async def chat(
     user_id: str,
     question: str = Form(...),
     session_id: Optional[str] = Form(None)
 ):
-    # Create a new session if none is provided
     if not session_id or session_id.strip() == "" or session_id.strip() == "string":
         session_id = str(uuid.uuid4())
+
+    # Save user message
+    save_message(
+        user_id=user_id,
+        session_id=session_id,
+        role="user",
+        message=question
+    )
 
     result = run_agent(
         query=question,
@@ -50,9 +59,19 @@ async def chat(
         session_id=session_id,
     )
 
+    answer = result["answer"]
+
+    # Save assistant response
+    save_message(
+        user_id=user_id,
+        session_id=session_id,
+        role="assistant",
+        message=answer
+    )
+
     return {
         "question": question,
-        "answer": result["answer"],
+        "answer": answer,
         "session_id": session_id,
         "source_type": result.get("source"),
         "classification": result.get("classification"),
