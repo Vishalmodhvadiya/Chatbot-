@@ -1,10 +1,9 @@
-from chat_history import save_message
+from sqlalchemy import create_engine, text
 
-save_message(
-    user_id="test",
-    session_id="123",
-    role="user",
-    message="hello"
+engine = create_engine(
+    "postgresql://postgres:postgres@localhost:5435/company_db"
 )
 
-print("insert complete")
+with engine.connect() as conn:
+    result = conn.execute(text("SELECT current_database();"))
+    print(result.fetchone())

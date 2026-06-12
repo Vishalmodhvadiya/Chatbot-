@@ -1,8 +1,8 @@
 from models import ChatMessage
-from database import SessionLocal
+from database import ChatSessionLocal
 
 def save_message(user_id, session_id, role, message):
-    db = SessionLocal()
+    db = ChatSessionLocal()
     try:
         db.add(ChatMessage(
             user_id=user_id,

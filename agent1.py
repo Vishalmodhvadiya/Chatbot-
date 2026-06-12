@@ -1,7 +1,7 @@
 import warnings
 warnings.filterwarnings("ignore")
 
-from database import SessionLocal
+from database import ChatSessionLocal
 from models import ChatMessage
 from chat_history import save_message
 from rag_chain import get_rag_chain
@@ -16,7 +16,7 @@ from llm import get_llm
 # ── 1. Load history from DB ───────────────────────────────────────────────────
 
 def get_chat_history_from_db(user_id: str, session_id: str) -> list[dict]:
-    db = SessionLocal()
+    db = ChatSessionLocal()
     try:
         rows = (
             db.query(ChatMessage)
@@ -139,4 +139,3 @@ if __name__ == "__main__":
 
         result = chat_with_history(user_id, session_id, question)
         print(f"Assistant: {result['answer']}\n")
-

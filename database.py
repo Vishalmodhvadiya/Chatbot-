@@ -1,18 +1,69 @@
-import os
-
 from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker
-from dotenv import load_dotenv
+from sqlalchemy.orm import sessionmaker, declarative_base
 
-load_dotenv()
+# ==========================================
+# CHAT HISTORY DATABASE
+# ==========================================
 
-DATABASE_URL = os.getenv("DATABASE_URL")
+CHATBOT_DB_URL = (
+    "postgresql://postgres:postgres@localhost:5435/chatbot_db"
+)
 
-engine = create_engine(DATABASE_URL)
+chat_engine = create_engine(
+    CHATBOT_DB_URL,
+    pool_pre_ping=True
+)
 
-SessionLocal = sessionmaker(
+ChatSessionLocal = sessionmaker(
     autocommit=False,
     autoflush=False,
-    bind=engine
+    bind=chat_engine
 )
-print("DATABASE_URL =", DATABASE_URL)
+
+# ==========================================
+# COMPANY DATABASE
+# ==========================================
+
+COMPANY_DB_URL = (
+    "postgresql://postgres:postgres@localhost:5435/company_db"
+)
+
+company_engine = create_engine(
+    COMPANY_DB_URL,
+    pool_pre_ping=True
+)
+
+CompanySessionLocal = sessionmaker(
+    autocommit=False,
+    autoflush=False,
+    bind=company_engine
+)
+
+# ==========================================
+# BASE MODEL
+# ==========================================
+
+Base = declarative_base()
+
+
+# ==========================================
+# DEPENDENCIES
+# ==========================================
+
+def get_chat_db():
+    db = ChatSessionLocal()
+    try:
+        yield db
+    finally:
+        db.close()
+
+
+def get_company_db():
+    db = CompanySessionLocal()
+    try:
+        yield db
+    finally:
+        db.close()
+
+
+SessionLocal = ChatSessionLocal
